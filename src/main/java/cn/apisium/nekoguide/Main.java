@@ -31,7 +31,7 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 import org.bukkit.scheduler.BukkitTask;
 
 import javax.annotation.Nullable;
-import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 @SuppressWarnings("unused")
@@ -57,13 +57,14 @@ public final class Main extends JavaPlugin implements Listener {
     private double prevY = 0;
     private BukkitTask task;
     private Player nextPlayer;
-    private BukkitTask task1;
+    private BukkitTask task1, task2;
     private float resolution = 0.003f;
     private int loops = Math.round(1 / resolution);
-    private int delay = 20;
+    private int delay = 50;
+    private Location loc00 = null;
 
     private static final Random r = new Random();
-    private static final DecimalFormat df = new DecimalFormat("0.00");
+    private static final SimpleDateFormat FORMER = new SimpleDateFormat("HH:mm:ss");
 
     private long time = 0;
     private LiveRoom client;
@@ -224,11 +225,15 @@ public final class Main extends JavaPlugin implements Listener {
                     task1.cancel();
                     task1 = null;
                 }
+                if (task2 != null) {
+                    task2.cancel();
+                    task2 = null;
+                }
             } else
                 currentPlayer.sendActionBar(getConfig().getString("title", "").replace("&", "§") +
                 " §7| §b服务器在线人数: §a" + getServer().getOnlinePlayers().size() + " §7| §b当前视角: §a" +
-                (currentAttach == null ? currentName : currentAttach.getName()) + " §7| §b当前TPS: §a" +
-                df.format(getServer().getTPS()[0]));
+                (currentAttach == null ? currentName : currentAttach.getName()) + " §7| §b当前时间: §a" +
+                    FORMER.format(new Date()));
         }, 0, 20);
         task1 = getServer().getScheduler().runTaskAsynchronously(this, () -> {
             while (pausedUUID != null) {
@@ -299,7 +304,7 @@ public final class Main extends JavaPlugin implements Listener {
                             double dz = loc.getZ() - tLoc.getZ();
                             loc.setYaw((float) (Math.atan2(dx, -dz) * 180 / Math.PI));
                             loc.setPitch((float) (Math.atan2(dy, Math.sqrt(Math.pow(dx, 2) + Math.pow(dz, 2))) * 180 / Math.PI));
-                            currentPlayer.teleportAsync(loc);
+                            loc00 = loc;
                             Thread.sleep(delay);
                         }
                     }
@@ -307,6 +312,9 @@ public final class Main extends JavaPlugin implements Listener {
                 cleanAttach();
             }
         });
+        task2 = getServer().getScheduler().runTaskTimer(this, () -> {
+            if (currentPlayer != null && loc00 != null) currentPlayer.teleportAsync(loc00);
+        }, 0, 0);
         connect();
     }
 
@@ -319,6 +327,10 @@ public final class Main extends JavaPlugin implements Listener {
         if (task1 != null) {
             task1.cancel();
             task1 = null;
+        }
+        if (task2 != null) {
+            task2.cancel();
+            task2 = null;
         }
         pausedUUID = null;
         cleanPlayer();
