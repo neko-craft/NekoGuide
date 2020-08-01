@@ -152,6 +152,16 @@ public final class Main extends JavaPlugin implements Listener {
                 break;
             case 2:
                 switch (args[0]) {
+                    case "other": {
+                        if (!sender.hasPermission("nekoguide.use")) {
+                            sender.sendMessage("§e[NekoGuide]: §c你没有执行指令的权限!");
+                            return true;
+                        }
+                        final Player player = getServer().getPlayerExact(args[1]);
+                        if (player == null) sender.sendMessage("§e[NekoGuide]: §c找不到该玩家!");
+                        else startOrStopGuide(player);
+                        return true;
+                    }
                     case "add":
                         if (!sender.hasPermission("nekoguide.edit")) {
                             sender.sendMessage("§e[NekoGuide]: §c你没有执行指令的权限!");
@@ -254,11 +264,12 @@ public final class Main extends JavaPlugin implements Listener {
                         currentAttach = nextPlayer;
                         nextPlayer = null;
                     } else {
-                        Object[] players = getServer().getOnlinePlayers().stream()
+                        final Object[] players = getServer().getOnlinePlayers().stream()
                             .filter(it -> it.getGameMode() == GameMode.SURVIVAL && !it.isDead())
                             .toArray();
-                        if (players.length != 0 &&
-                            r.nextDouble() > getConfig().getDouble("fixedLocationProbability", 0.2)) {
+                        final double num = getConfig().getDouble("fixedLocationProbability", 0.2);
+                        if (players.length != 0 && (players.length < 4 ? r.nextDouble() > 1 - num :
+                            r.nextDouble() > num)) {
                             currentAttach = (Player) players[players.length == 1 ? 0 : r.nextInt(players.length - 1)];
                             attachLocation = null;
                             currentName = "";
@@ -334,6 +345,7 @@ public final class Main extends JavaPlugin implements Listener {
         }
         pausedUUID = null;
         cleanPlayer();
+        cleanAttach();
     }
 
     private static Location getCatmullRomPosition(float t, Location p0, Location p1, Location p2, Location p3) {
@@ -409,11 +421,11 @@ public final class Main extends JavaPlugin implements Listener {
     }
 
     private void connect() {
-        long id = getConfig().getLong("roomId");
+        final int id = getConfig().getInt("roomId");
         if (currentPlayer == null || id == 0 || client != null) return;
         getLogger().info("Connecting... " + id);
 
-        client = new LiveRoom(2499457)
+        client = new LiveRoom(id)
             .onMessage(it -> {
             JsonObject json = parser.parse(it).getAsJsonObject();
             switch (json.get("cmd").getAsString()) {
@@ -444,7 +456,7 @@ public final class Main extends JavaPlugin implements Listener {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         return sender.hasPermission("nekoguide.edit") && args.length == 1
-            ? Lists.newArrayList("list", "add", "delete")
+            ? Lists.newArrayList("list", "add", "delete", "other")
             : null;
     }
 }

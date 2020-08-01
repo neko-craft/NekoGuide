@@ -1,11 +1,12 @@
 package cn.apisium.nekoguide;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.vertx.core.buffer.Buffer;
 
-import java.util.zip.DataFormatException;
-import java.util.zip.Inflater;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.InflaterOutputStream;
 
 final class LivePacket {
     private final short version;
@@ -23,10 +24,10 @@ final class LivePacket {
     }
 
     static LivePacket parse(ByteBuf buf) {
-        int len = buf.readInt();
-        int bodyLen = len - buf.readShort();
-        short version = buf.readShort();
-        int type = buf.readInt();
+        final int len = buf.readInt();
+        final int bodyLen = len - buf.readShort();
+        final short version = buf.readShort();
+        final int type = buf.readInt();
         buf.readInt();
         byte[] bytes = new byte[bodyLen];
         buf.readBytes(bytes);
@@ -34,7 +35,7 @@ final class LivePacket {
     }
 
     Buffer serialize() {
-        return Buffer.buffer(UnpooledByteBufAllocator.DEFAULT.buffer()
+        return Buffer.buffer(Unpooled.buffer()
             .writeInt(16 + body.length)
             .writeShort(16)
             .writeShort(version)
@@ -44,14 +45,14 @@ final class LivePacket {
         );
     }
 
-    String getStringBody() throws DataFormatException {
-        if (type == 2) {
-            Inflater inf = new Inflater();
-            inf.setInput(body);
-            byte[] bytes = new byte[inf.getTotalOut()];
-            inf.inflate(bytes);
-            inf.end();
-            return new String(bytes);
+    String getStringBody() {
+        if (version == 2) {
+            try (final ByteArrayOutputStream buf = new ByteArrayOutputStream();
+                final InflaterOutputStream stream = new InflaterOutputStream(buf)) {
+                stream.write(body);
+                return "{" + new String(buf.toByteArray(), StandardCharsets.UTF_8).split("\\{", 2)[1];
+            } catch (final Exception e) { e.printStackTrace(); }
+            return "";
         }
         return new String(body);
     }

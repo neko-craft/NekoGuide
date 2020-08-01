@@ -7,13 +7,15 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
+import java.util.function.Consumer;
+
 final class LiveRoom {
     private final int rootId;
     private long time;
     private boolean stopped;
     private String beforeMsg = "";
     private WebSocket ws;
-    private MessageHandler messageCallback;
+    private Consumer<String> messageCallback;
     private Runnable connectedCallback;
     private Runnable disconnectedCallback;
     private final static Vertx vertx = Vertx.vertx();
@@ -53,23 +55,20 @@ final class LiveRoom {
                             switch (packet.type) {
                                 case 3:
                                     long cTime = System.currentTimeMillis();
-                                    if (time - cTime > 50000) {
-                                        ws.end();
-                                        System.out.println(2333);
-                                    }
+                                    if (time - cTime > 50000) ws.end();
                                     time = cTime;
                                     break;
                                 case 5:
-                                    if (messageCallback != null) {
-                                        String msg = packet.getStringBody();
-                                        if (!beforeMsg.equals(msg)) {
-                                            beforeMsg = msg;
-                                            messageCallback.execute(msg);
-                                        }
+                                    if (messageCallback == null) break;
+                                    String msg = packet.getStringBody();
+                                    if (!beforeMsg.equals(msg)) {
+                                        beforeMsg = msg;
+                                        messageCallback.accept(msg);
                                     }
                                     break;
                                 case 8:
                                     time = System.currentTimeMillis();
+                                    ws.write(heartBeat);
                                     if (connectedCallback != null) connectedCallback.run();
                             }
                         } catch (Exception e) {
@@ -112,12 +111,8 @@ final class LiveRoom {
         return this;
     }
 
-    LiveRoom onMessage(MessageHandler fn) {
+    LiveRoom onMessage(Consumer<String> fn) {
         messageCallback = fn;
         return this;
-    }
-
-    public interface MessageHandler {
-        void execute(String message);
     }
 }
