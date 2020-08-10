@@ -199,7 +199,7 @@ public final class Main extends JavaPlugin implements Listener {
         return true;
     }
 
-    @SuppressWarnings({"StatementWithEmptyBody", "BusyWait", "ConstantConditions"})
+    @SuppressWarnings({ "BusyWait", "ConstantConditions" })
     private void startOrStopGuide(Player p) {
         if (Objects.requireNonNull(getConfig().getList("locations")).isEmpty()) {
             p.sendMessage("§e[NekoGuide]: §c当前固定坐标列表为空!");
@@ -221,7 +221,11 @@ public final class Main extends JavaPlugin implements Listener {
         currentPlayer = p;
         currentPlayer.setGameMode(GameMode.SPECTATOR);
         task = getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
-            while (pausedUUID != null);
+            while (pausedUUID != null) try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             if (currentPlayer == null) {
                 if (task != null) {
                     task.cancel();
@@ -246,12 +250,10 @@ public final class Main extends JavaPlugin implements Listener {
                     FORMER.format(new Date()));
         }, 0, 20);
         task1 = getServer().getScheduler().runTaskAsynchronously(this, () -> {
-            while (pausedUUID != null) {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            while (pausedUUID != null) try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
             while (currentPlayer != null) {
                 if (currentAttach == null) {
@@ -324,7 +326,7 @@ public final class Main extends JavaPlugin implements Listener {
             }
         });
         task2 = getServer().getScheduler().runTaskTimer(this, () -> {
-            if (currentPlayer != null && loc00 != null) currentPlayer.teleportAsync(loc00);
+            if (currentPlayer != null && loc00 != null) currentPlayer.teleport(loc00);
         }, 0, 0);
         connect();
     }
