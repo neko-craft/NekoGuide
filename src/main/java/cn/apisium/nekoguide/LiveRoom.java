@@ -53,23 +53,24 @@ final class LiveRoom {
                         LivePacket packet = LivePacket.parse(it.getByteBuf());
                         try {
                             switch (packet.type) {
-                                case 3:
+                                case 3 -> {
                                     long cTime = System.currentTimeMillis();
                                     if (time - cTime > 50000) ws.end();
                                     time = cTime;
-                                    break;
-                                case 5:
+                                }
+                                case 5 -> {
                                     if (messageCallback == null) break;
                                     String msg = packet.getStringBody();
                                     if (!beforeMsg.equals(msg)) {
                                         beforeMsg = msg;
                                         messageCallback.accept(msg);
                                     }
-                                    break;
-                                case 8:
+                                }
+                                case 8 -> {
                                     time = System.currentTimeMillis();
                                     ws.write(heartBeat);
                                     if (connectedCallback != null) connectedCallback.run();
+                                }
                             }
                         } catch (Exception e) {
                             e.printStackTrace();

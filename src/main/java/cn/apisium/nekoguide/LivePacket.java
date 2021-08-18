@@ -50,7 +50,7 @@ final class LivePacket {
             try (final ByteArrayOutputStream buf = new ByteArrayOutputStream();
                 final InflaterOutputStream stream = new InflaterOutputStream(buf)) {
                 stream.write(body);
-                return "{" + new String(buf.toByteArray(), StandardCharsets.UTF_8).split("\\{", 2)[1];
+                return "{" + buf.toString(StandardCharsets.UTF_8).split("\\{", 2)[1];
             } catch (final Exception e) { e.printStackTrace(); }
             return "";
         }

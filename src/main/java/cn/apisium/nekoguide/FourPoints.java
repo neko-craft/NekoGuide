@@ -1,6 +1,7 @@
 package cn.apisium.nekoguide;
 
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
 
 final class FourPoints {
     Location p0;
@@ -27,6 +28,11 @@ final class FourPoints {
         p1 = l.clone().add(r1 * Math.cos(a1), random(minH, maxH), r1 * Math.sin(a1));
         p2 = l.clone().add(r2 * Math.cos(a2), random(minH, maxH), r2 * Math.sin(a2));
         p3 = l.clone().add(r3 * Math.cos(a3), random(minH, maxH), r3 * Math.sin(a3));
+    }
+
+
+    FourPoints(final Player p) {
+        p0 = p1 = p2 = p3 = p.getLocation();
     }
 
     void next(Location l) {

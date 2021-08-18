@@ -30,11 +30,10 @@ import org.bukkit.plugin.java.annotation.plugin.*;
 import org.bukkit.plugin.java.annotation.plugin.author.Author;
 import org.bukkit.scheduler.BukkitTask;
 
-import javax.annotation.Nullable;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "deprecation"})
 @Plugin(name = "NekoGuide", version = "1.0")
 @Description("An essential plugin used in NekoCraft.")
 @Author("Shirasawa")
@@ -54,7 +53,6 @@ public final class Main extends JavaPlugin implements Listener {
     private Player currentAttach;
     private Location attachLocation;
     private String currentName = "";
-    private double prevY = 0;
     private BukkitTask task;
     private Player nextPlayer;
     private BukkitTask task1, task2;
@@ -120,11 +118,10 @@ public final class Main extends JavaPlugin implements Listener {
     @SuppressWarnings("NullableProblems")
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player p)) {
             sender.sendMessage("§e[NekoGuide]: §c你不是玩家!");
             return true;
         }
-        Player p = (Player) sender;
         switch (args.length) {
             case 0:
                 if (!sender.hasPermission("nekoguide.use")) {
@@ -152,7 +149,7 @@ public final class Main extends JavaPlugin implements Listener {
                 break;
             case 2:
                 switch (args[0]) {
-                    case "other": {
+                    case "other" -> {
                         if (!sender.hasPermission("nekoguide.use")) {
                             sender.sendMessage("§e[NekoGuide]: §c你没有执行指令的权限!");
                             return true;
@@ -162,7 +159,7 @@ public final class Main extends JavaPlugin implements Listener {
                         else startOrStopGuide(player);
                         return true;
                     }
-                    case "add":
+                    case "add" -> {
                         if (!sender.hasPermission("nekoguide.edit")) {
                             sender.sendMessage("§e[NekoGuide]: §c你没有执行指令的权限!");
                             return true;
@@ -176,7 +173,8 @@ public final class Main extends JavaPlugin implements Listener {
                         saveConfig();
                         sender.sendMessage("§e[NekoGuide]: §a保存成功!");
                         return true;
-                    case "delete":
+                    }
+                    case "delete" -> {
                         if (!sender.hasPermission("nekoguide.edit")) {
                             sender.sendMessage("§e[NekoGuide]: §c你没有执行指令的权限!");
                             return true;
@@ -192,6 +190,7 @@ public final class Main extends JavaPlugin implements Listener {
                             sender.sendMessage("§e[NekoGuide]: §a保存失败!");
                         }
                         return true;
+                    }
                 }
                 break;
         }
@@ -199,7 +198,7 @@ public final class Main extends JavaPlugin implements Listener {
         return true;
     }
 
-    @SuppressWarnings({ "BusyWait", "ConstantConditions" })
+    @SuppressWarnings("BusyWait")
     private void startOrStopGuide(Player p) {
         if (Objects.requireNonNull(getConfig().getList("locations")).isEmpty()) {
             p.sendMessage("§e[NekoGuide]: §c当前固定坐标列表为空!");
@@ -270,7 +269,7 @@ public final class Main extends JavaPlugin implements Listener {
                             .filter(it -> it.getGameMode() == GameMode.SURVIVAL && !it.isDead())
                             .toArray();
                         final double num = getConfig().getDouble("fixedLocationProbability", 0.2);
-                        if (players.length != 0 && (players.length < 4 ? r.nextDouble() > 1 - num :
+                        if (players.length != 0 && (players.length < 6 ? r.nextDouble() > 1 - num :
                             r.nextDouble() > num)) {
                             currentAttach = (Player) players[players.length == 1 ? 0 : r.nextInt(players.length - 1)];
                             attachLocation = null;
@@ -296,25 +295,32 @@ public final class Main extends JavaPlugin implements Listener {
                     if (currentAttach != null) currentAttach.setGlowing(true);
                 }
                 FourPoints fp = new FourPoints((currentAttach == null ? attachLocation.clone()
-                    : currentAttach.getLocation()).add(0, 15, 0));
+                    : currentAttach.getLocation()).add(0, 15, 0)),
+                        playerFp = currentAttach == null ? null : new FourPoints(currentAttach);
                 try {
                     loop: for (int j = 0; j < 7; j++) {
                         if ((currentAttach == null && attachLocation == null) || currentPlayer == null) break;
                         fp.next((currentAttach == null ? attachLocation.clone()
                             : currentAttach.getLocation()).add(0, 15, 0));
+                        if (playerFp != null) {
+                            Location targetLoc = currentAttach.getLocation();
+                            playerFp.next(targetLoc);
+                        }
                         for (int i = 0; i <= loops; i++) {
                             if ((currentAttach == null && attachLocation == null) || currentPlayer == null) break loop;
-                            Location tLoc = currentAttach == null ? attachLocation.clone() : currentAttach.getLocation();
+                            Location targetLoc = playerFp == null ? attachLocation
+                                    : getCatmullRomPosition(i * resolution, playerFp.p0, playerFp.p1, playerFp.p2, playerFp.p3);
                             Location loc = getCatmullRomPosition(i * resolution, fp.p0, fp.p1, fp.p2, fp.p3);
-                            if (tLoc.getWorld() != loc.getWorld() || tLoc.distance(loc) > 64) {
-                                cleanAttach();
-                                break loop;
+                            if (currentAttach != null) {
+                                Location playerLoc = currentAttach.getLocation();
+                                if (playerLoc.getWorld() != loc.getWorld() || playerLoc.distance(loc) > 80) {
+                                    cleanAttach();
+                                    break loop;
+                                }
                             }
-                            prevY = tLoc.getY();
-                            tLoc.setY((prevY + tLoc.getY()) / 2);
-                            double dx = loc.getX() - tLoc.getX();
-                            double dy = loc.getY() - tLoc.getY();
-                            double dz = loc.getZ() - tLoc.getZ();
+                            double dx = loc.getX() - targetLoc.getX();
+                            double dy = loc.getY() - targetLoc.getY();
+                            double dz = loc.getZ() - targetLoc.getZ();
                             loc.setYaw((float) (Math.atan2(dx, -dz) * 180 / Math.PI));
                             loc.setPitch((float) (Math.atan2(dy, Math.sqrt(Math.pow(dx, 2) + Math.pow(dz, 2))) * 180 / Math.PI));
                             loc00 = loc;
@@ -409,7 +415,6 @@ public final class Main extends JavaPlugin implements Listener {
     }
 
     private void cleanAttach() {
-        prevY = 0;
         if (currentPlayer != null && currentAttach != null) currentAttach.setGlowing(false);
         currentAttach = null;
     }
@@ -454,7 +459,6 @@ public final class Main extends JavaPlugin implements Listener {
     }
 
     @SuppressWarnings("NullableProblems")
-    @Nullable
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         return sender.hasPermission("nekoguide.edit") && args.length == 1

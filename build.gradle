@@ -1,16 +1,17 @@
 plugins {
     id 'java'
     id 'idea'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
-group 'cn.apisium.bots'
+group 'cn.apisium.nekocraft'
 version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
     maven {
-        name = 'destroystokyo-repo'
-        url = 'https://repo.destroystokyo.com/repository/maven-public/'
+        name = 'papermc'
+        url = 'https://papermc.io/repo/repository/maven-public/'
     }
     maven {
         name = 'sonatype'
@@ -19,15 +20,25 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'org.spigotmc:plugin-annotations:1.2.3-SNAPSHOT'
-    compileOnly 'com.destroystokyo.paper:paper-api:1.16.1-R0.1-SNAPSHOT'
-    compile 'io.vertx:vertx-web-client:3.8.5'
+    compileOnly 'io.papermc.paper:paper-api:1.17.1-R0.1-SNAPSHOT'
+    compileOnly 'io.netty:netty-all:4.1.65.Final'
+    compileOnly ('org.spigotmc:plugin-annotations:1.2.3-SNAPSHOT') {
+        exclude group: 'org.bukkit'
+    }
+    implementation ('io.vertx:vertx-web-client:4.1.2') {
+        exclude group: 'io.netty'
+    }
 
     annotationProcessor 'org.spigotmc:plugin-annotations:1.2.3-SNAPSHOT'
 }
 
-jar {
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
+shadowJar {
+    archiveClassifier.set('')
+    minimize()
+}
+
+build.dependsOn(shadowJar)
+
+tasks.withType(JavaCompile) {
+    options.encoding = "GBK"
 }
