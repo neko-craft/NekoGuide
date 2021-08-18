@@ -265,20 +265,19 @@ public final class Main extends JavaPlugin implements Listener {
                         currentAttach = nextPlayer;
                         nextPlayer = null;
                     } else {
-                        final Object[] players = getServer().getOnlinePlayers().stream()
+                        final Player[] players = getServer().getOnlinePlayers().stream()
                             .filter(it -> it.getGameMode() == GameMode.SURVIVAL && !it.isDead())
-                            .toArray();
+                            .toArray(Player[]::new);
                         final double num = getConfig().getDouble("fixedLocationProbability", 0.2);
                         if (players.length != 0 && (players.length < 6 ? r.nextDouble() > 1 - num :
                             r.nextDouble() > num)) {
-                            currentAttach = (Player) players[players.length == 1 ? 0 : r.nextInt(players.length - 1)];
+                            currentAttach = players[r.nextInt(players.length)];
                             attachLocation = null;
                             currentName = "";
                         } else {
                             List<Map<?, ?>> l = getConfig().getMapList("locations");
-                            int size = l.size() - 1;
                             currentAttach = null;
-                            Map<?, ?> map = l.get(size > 0 ? r.nextInt(size) : size);
+                            Map<?, ?> map = l.get(r.nextInt(l.size()));
                             currentName = (String) map.get("name");
                             attachLocation = (Location) map.get("location");
                         }
