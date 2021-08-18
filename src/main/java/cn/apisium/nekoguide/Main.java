@@ -304,7 +304,7 @@ public final class Main extends JavaPlugin implements Listener {
                             : currentAttach.getLocation()).add(0, 15, 0));
                         if (playerFp != null) {
                             Location targetLoc = currentAttach.getLocation();
-                            playerFp.next(targetLoc);
+                            playerFp.nextAbs(targetLoc);
                         }
                         for (int i = 0; i <= loops; i++) {
                             if ((currentAttach == null && attachLocation == null) || currentPlayer == null) break loop;

@@ -38,12 +38,16 @@ final class FourPoints {
     void next(Location l) {
         double r = random(min, max);
         double a = random(index * 0.5, (index + 1) * 0.5) * Math.PI;
+        nextAbs(l.clone().add(r * Math.cos(a), random(minH, maxH), r * Math.sin(a)));
+        index++;
+        if (index > 3) index = 0;
+    }
+
+    void nextAbs(Location l) {
         p0 = p1;
         p1 = p2;
         p2 = p3;
-        p3 = l.clone().add(r * Math.cos(a), random(minH, maxH), r * Math.sin(a));
-        index++;
-        if (index > 3) index = 0;
+        p3 = l;
     }
 
     private static double random(double min, double max) {
